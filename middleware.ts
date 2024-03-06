@@ -1,36 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const config = {
-  matchers: ['/', '/index'],
+  matcher: ['/'],
 }
 
-export function middleware(req: NextRequest) {
-  const isLocalDevelopment = process.env.NODE_ENV === 'development'
-
-  if (isLocalDevelopment || !process.env.BASIC_ID || !process.env.BASIC_PWD) {
-    return NextResponse.next()
-  }
-
+export default function middleware(req: NextRequest) {
   const basicAuth = req.headers.get('authorization')
-  if (!basicAuth) {
-    return new Response('Authentication required', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Secure Area"',
-      },
-    })
-  }
 
-  try {
+  if (basicAuth) {
     const authValue = basicAuth.split(' ')[1]
-    const [user, pwd] = atob(authValue).split(':')
+    const [user, password] = atob(authValue).split(':')
 
-    if (user === process.env.BASIC_ID && pwd === process.env.BASIC_PWD) {
+    if (user === process.env.BASIC_ID && password === process.env.BASIC_PWD) {
       return NextResponse.next()
     }
-  } catch (e) {
-    return new Response('Invalid Authentication', { status: 400 })
   }
 
-  return new Response('Unauthorized', { status: 401 })
+  return new NextResponse('Unauthorized.', {
+    status: 401,
+    headers: {
+      'WWW-authenticate': 'Basic realm="Secure Area"',
+    },
+  })
 }
